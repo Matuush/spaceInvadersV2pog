@@ -66,7 +66,7 @@ void setup() {
 
 void loop() {
   time++;
-  unsigned int uhh = abs(DELAY - 10 * score);
+  unsigned int uhh = score < 300 ? abs(DELAY - 10 * score) : 0;
   if(time % uhh == 0){
     mov()
     movBullets()
