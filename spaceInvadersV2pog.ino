@@ -11,8 +11,8 @@ MaxMatrix disp = MaxMatrix(DIN, CS, CLK, 1);
 unsigned int bulletCount = 0;
 unsigned int bulletX[8] = {0, 0, 0, 0, 0, 0, 0, 0}, bulletY[8] = {6, 6, 6, 6, 6, 6, 6, 6};
 #define newBullet(x) {bulletX[bulletCount] = x; bulletCount++;}
-#define resetBullet(i) {bulletCount--; \
-  for(unsigned int ii = i; ii < bulletCount; ii++) {bulletX[(ii)] = bulletX[(ii+1)], bulletY[(ii)] = bulletY[(ii+1)];} \
+#define resetBullet(i) {bulletCount--;\
+  while(i < bulletCount) {bulletX[(i)] = bulletX[(i+1)], bulletY[(i)] = bulletY[(i+1)] - 1; i++;} \
   bulletY[bulletCount] = 6;}
 #define movBullet(i) {if(bulletY[i] == 0) {resetBullet(i)} else bulletY[i]--;}
 #define movBullets() {for(unsigned int i = 0; i < bulletCount; i++) {movBullet(i)}}
@@ -28,10 +28,16 @@ unsigned int enemyCount = 0;
 unsigned int enemyX[8] = {0, 0, 0, 0, 0, 0, 0, 0}, enemyY[8] = {0, 0, 0, 0, 0, 0, 0, 0};
 #define newEnemy(x) {enemyX[enemyCount] = x; enemyCount++;}
 #define resetEnemy(i) {enemyCount--; \
-  for(unsigned int ii = i; ii < enemyCount; ii++) {enemyX[(ii)] = enemyX[(ii+1)], enemyY[(ii)] = enemyY[(ii+1)];} \
+  for(unsigned int ii = i; ii < enemyCount; ii++) {enemyX[(ii)] = enemyX[(ii+1)], enemyY[(ii)] = enemyY[(ii+1)] + 1;} \
   enemyY[enemyCount] = 0;}
 #define movEnemy(i) {if(enemyY[i] == 7) {resetEnemy(i)} else enemyY[i]++;}
-#define movEnemies() {for(unsigned int i = 0; i < enemyCount; i++) {movEnemy(i)}}
+#define movEnemies() {for(unsigned int i = 0; i < enemyCount; i++) movEnemy(i)}
+
+// Collision
+#define collidesShip(i) ((enemyX[i] == shipX && enemyY[i] == 1) || ((enemyX[i] == shipX - 1 || enemyX[i] == shipX || enemyX[i] == shipX) && enemyY[i] == 7) ? true : false)
+#define collidesBullet(i, b) (enemyX[i] == bulletX[b] && enemyY[i] == bulletY[b] ? true : false)
+#define collides(i) {if(collidesShip(i)){shipLife--; resetEnemy(i);}; for(unsigned int ii = 0; ii < bulletCount; ii++){if(collidesBullet(i, ii)){resetEnemy(i);}}}
+#define collision() {for(unsigned int i = 0; i < enemyCount; i++)collides(i)}
 
 // Visual
 #define prtShip() {disp.setDot(shipX, shipY, true); disp.setDot(shipX, shipY - 1, true); disp.setDot(shipX - 1, shipY, true); disp.setDot(shipX + 1, shipY, true);}
@@ -44,9 +50,9 @@ unsigned int enemyX[8] = {0, 0, 0, 0, 0, 0, 0, 0}, enemyY[8] = {0, 0, 0, 0, 0, 0
 
 // uhhh general
 unsigned long time = 0;
-#define DELAY 3000
 unsigned int score = 0, highScore = 0;
-#define reset() score = 0, shipX = 3, shipLife = 3, bulletY[0] = 6, bulletY[1] = 6, bulletY[2] = 6, bulletY[3] = 6, bulletY[4] = 6, bulletY[5] = 6, bulletY[6] = 6, bulletY[7] = 6, enemyY[0] = 0, enemyY[1] = 0, enemyY[2] = 0, enemyY[3] = 0, enemyY[4] = 0, enemyY[5] = 0, enemyY[6] = 0, enemyY[7] = 0;
+#define DELAY 3000
+#define reset() score = 0, shipX = 3, shipLife = 3, bulletY[0] = 6, bulletY[1] = 6, bulletY[2] = 6, bulletY[3] = 6, bulletY[4] = 6, bulletY[5] = 6, bulletY[6] = 6, bulletY[7] = 6, bulletCount = 0; enemyY[0] = 0, enemyY[1] = 0, enemyY[2] = 0, enemyY[3] = 0, enemyY[4] = 0, enemyY[5] = 0, enemyY[6] = 0, enemyY[7] = 0, enemyCount = 0;
 
 // UHHHHHHHHH
 void setup() {
@@ -60,17 +66,18 @@ void setup() {
 void loop() {
   time++;
   if(time % DELAY == 0){
-    mov();
-    movBullets();
-    movEnemies();
-    //if(time % (4 * DELAY) == 0 && analogRead(JOY_Y) < 200) shoot();
+    mov()
+    movBullets()
+    movEnemies()
+    collision()
+    if(time % (4 * DELAY) == 0 && analogRead(JOY_Y) < 200) shoot();
     if(time % (5 * DELAY) == 0) newEnemy(random(0, 8));
     disp.clear();
-    prtShip();
-    prtBullets();
-    prtEnemies();
+    prtShip()
+    prtBullets()
+    prtEnemies()
   }
 
   if(score > highScore) highScore = score;
-  if(shipLife <= 0) reset();
+  if(shipLife <= 0) {reset();}
 }
